@@ -128,6 +128,43 @@ final class PriorityQueueTests: XCTestCase {
     XCTAssertEqual(90, queue.max())
   }
 
+  func test_contains() {
+    let queue = PriorityQueue((1...30).filter { $0 % 2 == 0 }.shuffled())
+
+    XCTAssertFalse(queue.contains(0))
+    XCTAssertFalse(queue.contains(1))
+    XCTAssertTrue(queue.contains(2))
+    XCTAssertFalse(queue.contains(3))
+    XCTAssertTrue(queue.contains(4))
+    XCTAssertFalse(queue.contains(5))
+    XCTAssertTrue(queue.contains(6))
+    XCTAssertFalse(queue.contains(7))
+    XCTAssertTrue(queue.contains(8))
+    XCTAssertFalse(queue.contains(9))
+    XCTAssertTrue(queue.contains(10))
+    XCTAssertFalse(queue.contains(11))
+    XCTAssertTrue(queue.contains(12))
+    XCTAssertFalse(queue.contains(13))
+    XCTAssertTrue(queue.contains(14))
+    XCTAssertFalse(queue.contains(15))
+    XCTAssertTrue(queue.contains(16))
+    XCTAssertFalse(queue.contains(17))
+    XCTAssertTrue(queue.contains(18))
+    XCTAssertFalse(queue.contains(19))
+    XCTAssertTrue(queue.contains(20))
+    XCTAssertFalse(queue.contains(21))
+    XCTAssertTrue(queue.contains(22))
+    XCTAssertFalse(queue.contains(23))
+    XCTAssertTrue(queue.contains(24))
+    XCTAssertFalse(queue.contains(25))
+    XCTAssertTrue(queue.contains(26))
+    XCTAssertFalse(queue.contains(27))
+    XCTAssertTrue(queue.contains(28))
+    XCTAssertFalse(queue.contains(29))
+    XCTAssertTrue(queue.contains(30))
+    XCTAssertFalse(queue.contains(31))
+  }
+
   func test_popMin() {
     var queue = PriorityQueue<Int>()
     XCTAssertNil(queue.popMin())
