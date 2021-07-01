@@ -453,11 +453,19 @@ final class PriorityQueueTests: XCTestCase {
       XCTAssertEqual(increment, val)
       increment += 1
     }
+    XCTAssertEqual(queue.ascending.underestimatedCount, 51)
+    XCTAssertFalse(queue.ascending.contains(-1))
+    XCTAssertTrue(queue.ascending.contains(25))
+    XCTAssertFalse(queue.ascending.contains(51))
 
     increment = 50
     for val in queue.descending {
       XCTAssertEqual(increment, val)
       increment -= 1
     }
+    XCTAssertEqual(queue.descending.underestimatedCount, 51)
+    XCTAssertFalse(queue.descending.contains(-2))
+    XCTAssertTrue(queue.descending.contains(24))
+    XCTAssertFalse(queue.descending.contains(52))
   }
 }

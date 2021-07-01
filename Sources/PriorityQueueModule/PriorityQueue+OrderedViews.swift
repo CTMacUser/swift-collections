@@ -11,45 +11,61 @@
 
 extension PriorityQueue {
 
-  /// Adds sequence conformance to both the min and max view of the priority queue
-  public struct Iterator: Sequence, IteratorProtocol {
-
-    public enum IterationDirection {
-      case ascending
-      case descending
-    }
-
+  /// A view of a `PriorityQueue`'s elements, as a `Sequence` from the element
+  /// with the lowest priority to the highest.
+  public struct AscendingView: Sequence, IteratorProtocol {
+    /// The source priority queue.
     @usableFromInline
     internal var _base: PriorityQueue
 
+    /// Creates an ascending-element view from the given priority queue.
     @usableFromInline
-    internal let _direction: IterationDirection
+    internal init(_ base: PriorityQueue) { _base = base }
 
     @inlinable
-    public init(_base: PriorityQueue, _direction:IterationDirection) {
-      self._base = _base
-      self._direction = _direction
+    public mutating func next() -> Element? { return _base.popMin() }
+
+    @inlinable
+    public var underestimatedCount: Int { _base.count }
+
+    @inlinable
+    public func _customContainsEquatableElement(_ element: Element) -> Bool? {
+      return _base.contains(element)
     }
+  }
 
-    // Returns the next element in the priority queue depending on the iteration direction
+  /// A view of a `PriorityQueue`'s elements, as a `Sequence` from the element
+  /// with the highest priority to the lowest.
+  public struct DescendingView: Sequence, IteratorProtocol {
+    /// The source priority queue.
+    @usableFromInline
+    internal var _base: PriorityQueue
+
+    /// Creates a descending-element view from the given priority queue.
+    @usableFromInline
+    internal init(_ base: PriorityQueue) { _base = base }
+
     @inlinable
-    public mutating func next() -> Element? {
-      if(_direction == .ascending){
-        return _base.popMin()
-      }
-      return _base.popMax()
+    public mutating func next() -> Element? { return _base.popMax() }
+
+    @inlinable
+    public var underestimatedCount: Int { _base.count }
+
+    @inlinable
+    public func _customContainsEquatableElement(_ element: Element) -> Bool? {
+      return _base.contains(element)
     }
   }
 
   /// Returns an iterator that orders elements from lowest to highest priority
   @inlinable
-  public var ascending: Iterator {
-    return Iterator(_base: self, _direction: .ascending)
+  public var ascending: AscendingView {
+    return AscendingView(self)
   }
 
   /// Returns an iterator that orders elements from highest to lowest priority
   @inlinable
-  public var descending: Iterator {
-    return Iterator(_base: self, _direction: .descending)
+  public var descending: DescendingView {
+    return DescendingView(self)
   }
 }
