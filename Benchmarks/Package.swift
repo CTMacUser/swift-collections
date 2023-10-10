@@ -1,4 +1,4 @@
-// swift-tools-version:5.5
+// swift-tools-version:5.3
 //===----------------------------------------------------------------------===//
 //
 // This source file is part of the Swift Collections open source project
@@ -14,13 +14,9 @@ import PackageDescription
 
 let package = Package(
   name: "swift-collections.Benchmarks",
-  products: [
-    .executable(name: "benchmark", targets: ["benchmark"]),
-    .executable(name: "memory-benchmark", targets: ["memory-benchmark"]),
-  ],
   dependencies: [
     .package(name: "swift-collections", path: ".."),
-    .package(url: "https://github.com/apple/swift-collections-benchmark", from: "0.0.3"),
+    .package(url: "https://github.com/apple/swift-collections-benchmark", from: "0.0.1"),
   ],
   targets: [
     .target(
@@ -29,25 +25,23 @@ let package = Package(
         .product(name: "Collections", package: "swift-collections"),
         .product(name: "CollectionsBenchmark", package: "swift-collections-benchmark"),
         "CppBenchmarks",
+      ],
+      path: "Benchmarks",
+      resources: [
+        .copy("Library.json"),
       ]
     ),
     .target(
-      name: "CppBenchmarks"
+      name: "CppBenchmarks",
+      path: "CppBenchmarks"
     ),
-    .executableTarget(
+    .target(
       name: "benchmark",
       dependencies: [
         "Benchmarks",
       ],
-      path: "Sources/benchmark-tool"
-    ),
-    .executableTarget(
-      name: "memory-benchmark",
-      dependencies: [
-        .product(name: "Collections", package: "swift-collections"),
-        .product(name: "CollectionsBenchmark", package: "swift-collections-benchmark"),
-      ]
+      path: "benchmark-tool"
     ),
   ],
-  cxxLanguageStandard: .cxx17
+  cxxLanguageStandard: .cxx1z
 )

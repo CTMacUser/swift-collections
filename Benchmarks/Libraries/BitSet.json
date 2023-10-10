@@ -1,7 +1,7 @@
 {
   "kind": "group",
-  "title": "BitSet Benchmarks",
-  "directory": "BitSet",
+  "title": "Bitset Benchmarks",
+  "directory": "Results",
   "contents": [
     {
       "kind": "group",

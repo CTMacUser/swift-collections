@@ -2,16 +2,12 @@
 //
 // This source file is part of the Swift Collections open source project
 //
-// Copyright (c) 2021 - 2023 Apple Inc. and the Swift project authors
+// Copyright (c) 2021 Apple Inc. and the Swift project authors
 // Licensed under Apache License v2.0 with Runtime Library Exception
 //
 // See https://swift.org/LICENSE.txt for license information
 //
 //===----------------------------------------------------------------------===//
-
-#if !COLLECTIONS_SINGLE_MODULE
-import _CollectionsUtilities
-#endif
 
 extension Deque: Sequence {
   // Implementation note: we could also use the default `IndexingIterator` here.
@@ -108,10 +104,10 @@ extension Deque: Sequence {
       _storage.read { source in
         let segments = source.segments()
         let c = segments.first.count
-        target[..<c].initializeAll(fromContentsOf: segments.first)
+        target[..<c]._rebased()._initialize(from: segments.first)
         count += segments.first.count
         if let second = segments.second {
-          target[c ..< c + second.count].initializeAll(fromContentsOf: second)
+          target[c ..< c + second.count]._rebased()._initialize(from: second)
           count += second.count
         }
         assert(count == source.count)
@@ -126,12 +122,12 @@ extension Deque: Sequence {
     _storage.read { source in
       let segments = source.segments()
       let c1 = Swift.min(segments.first.count, target.count)
-      target[..<c1].initializeAll(fromContentsOf: segments.first.prefix(c1))
+      target[..<c1]._rebased()._initialize(from: segments.first.prefix(c1)._rebased())
       guard target.count > c1, let second = segments.second else {
         return (Iterator(_base: self, from: c1), c1)
       }
       let c2 = Swift.min(second.count, target.count - c1)
-      target[c1 ..< c1 + c2].initializeAll(fromContentsOf: second.prefix(c2))
+      target[c1 ..< c1 + c2]._rebased()._initialize(from: second.prefix(c2)._rebased())
       return (Iterator(_base: self, from: c1 + c2), c1 + c2)
     }
   }
@@ -163,8 +159,6 @@ extension Deque: Sequence {
     }
   }
 }
-
-extension Deque.Iterator: Sendable where Element: Sendable {}
 
 extension Deque: RandomAccessCollection {
   public typealias Index = Int
@@ -365,33 +359,22 @@ extension Deque: RandomAccessCollection {
         handle.ptr(at: slot).pointee = newValue
       }
     }
-    @inline(__always) // https://github.com/apple/swift-collections/issues/164
     _modify {
       precondition(index >= 0 && index < count, "Index out of bounds")
-      var (slot, value) = _prepareForModify(at: index)
+      _storage.ensureUnique()
+      // We technically aren't supposed to escape storage pointers out of a
+      // managed buffer, so we escape a `(slot, value)` pair instead, leaving
+      // the corresponding slot temporarily uninitialized.
+      var (slot, value) = _storage.update { handle -> (_Slot, Element) in
+        let slot = handle.slot(forOffset: index)
+        return (slot, handle.ptr(at: slot).move())
+      }
       defer {
-        _finalizeModify(slot, value)
+        _storage.update { handle in
+          handle.ptr(at: slot).initialize(to: value)
+        }
       }
       yield &value
-    }
-  }
-
-  @inlinable
-  internal mutating func _prepareForModify(at index: Int) -> (_Slot, Element) {
-    _storage.ensureUnique()
-    // We technically aren't supposed to escape storage pointers out of a
-    // managed buffer, so we escape a `(slot, value)` pair instead, leaving
-    // the corresponding slot temporarily uninitialized.
-    return _storage.update { handle in
-      let slot = handle.slot(forOffset: index)
-      return (slot, handle.ptr(at: slot).move())
-    }
-  }
-
-  @inlinable
-  internal mutating func _finalizeModify(_ slot: _Slot, _ value: Element) {
-    _storage.update { handle in
-      handle.ptr(at: slot).initialize(to: value)
     }
   }
 
@@ -624,10 +607,10 @@ extension Deque: RangeReplaceableCollection {
       assert(handle.startSlot == .zero)
       let target = handle.mutableBuffer(for: .zero ..< _Slot(at: c))
       let done: Void? = elements._withContiguousStorageIfAvailable_SR14663 { source in
-        target.initializeAll(fromContentsOf: source)
+        target._initialize(from: source)
       }
       if done == nil {
-        target.initializeAll(fromContentsOf: elements)
+        target._initialize(from: elements)
       }
       handle.count = c
     }
@@ -689,7 +672,7 @@ extension Deque: RangeReplaceableCollection {
     }
 
     let underestimatedCount = newElements.underestimatedCount
-    _storage.ensureUnique(minimumCapacity: count + underestimatedCount)
+    reserveCapacity(count + underestimatedCount)
     var it: S.Iterator = _storage.update { target in
       let gaps = target.availableSegments()
       let (it, copied) = gaps.initialize(fromSequencePrefix: newElements)
@@ -730,7 +713,7 @@ extension Deque: RangeReplaceableCollection {
 
     let c = newElements.count
     guard c > 0 else { return }
-    _storage.ensureUnique(minimumCapacity: count + c)
+    reserveCapacity(count + c)
     _storage.update { target in
       let gaps = target.availableSegments().prefix(c)
       gaps.initialize(from: newElements)

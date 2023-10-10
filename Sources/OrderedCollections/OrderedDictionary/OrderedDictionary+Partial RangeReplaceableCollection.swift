@@ -48,7 +48,7 @@ extension OrderedDictionary {
     _values.removeAll(keepingCapacity: keepCapacity)
   }
 
-  /// Removes and returns the key-value pair at the specified index.
+  /// Removes and returns the element at the specified position.
   ///
   /// All the elements following the specified position are moved to close the
   /// resulting gap.

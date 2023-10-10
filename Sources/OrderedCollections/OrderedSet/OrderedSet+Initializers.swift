@@ -9,10 +9,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#if !COLLECTIONS_SINGLE_MODULE
-import _CollectionsUtilities
-#endif
-
 extension OrderedSet {
   /// Creates a set with the contents of the given sequence, which
   /// must not include duplicate elements.
@@ -53,13 +49,11 @@ extension OrderedSet {
   /// Creates a new set from a finite sequence of items.
   ///
   /// - Parameter elements: The elements to use as members of the new set.
-  ///    The sequence is allowed to contain duplicate elements, but only
-  ///    the first duplicate instance is preserved in the result.
   ///
   /// - Complexity: This operation is expected to perform O(*n*)
-  ///    hashing and equality comparisons on average (where *n*
-  ///    is the number of elements in the sequence), provided that
-  ///    `Element` properly implements hashing.
+  ///    comparisons on average (where *n* is the number of elements
+  ///    in the sequence), provided that `Element` implements
+  ///    high-quality hashing.
   @inlinable
   public init<S: Sequence>(_ elements: S) where S.Element == Element {
     if S.self == Self.self {
@@ -67,12 +61,12 @@ extension OrderedSet {
       return
     }
     // Fast paths for when we know elements are all unique
-    if elements is _UniqueCollection {
+    if S.self == Set<Element>.self || S.self == SubSequence.self {
       self.init(uncheckedUniqueElements: elements)
       return
     }
 
-    self.init(minimumCapacity: elements.underestimatedCount)
+    self.init()
     append(contentsOf: elements)
   }
 

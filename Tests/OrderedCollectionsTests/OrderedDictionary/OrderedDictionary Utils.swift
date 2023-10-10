@@ -9,12 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#if COLLECTIONS_SINGLE_MODULE
-import Collections
-#else
 import _CollectionsTestSupport
 import OrderedCollections
-#endif
 
 extension LifetimeTracker {
   func orderedDictionary<Keys: Sequence>(

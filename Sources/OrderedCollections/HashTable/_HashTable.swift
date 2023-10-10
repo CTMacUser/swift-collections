@@ -170,7 +170,6 @@ extension _HashTable {
   @inlinable
   internal var header: Header {
     get { _storage.header }
-    @inline(__always) // https://github.com/apple/swift-collections/issues/164
     nonmutating _modify { yield &_storage.header }
   }
 

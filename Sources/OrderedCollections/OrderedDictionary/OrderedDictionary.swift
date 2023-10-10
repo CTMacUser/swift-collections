@@ -79,7 +79,7 @@
 ///
 /// If the `Value` type implements reference semantics, or when you need to
 /// perform a series of individual mutations on the values, the closure-based
-/// ``updateValue(forKey:default:with:)`` method provides an easier-to-use
+/// `updateValue(forKey:default:_:)` method provides an easier-to-use
 /// alternative to the defaulted key-based subscript.
 ///
 ///     let text = "short string"
@@ -93,14 +93,13 @@
 ///
 /// (This isn't currently available on the regular `Dictionary`.)
 ///
-/// The `Dictionary` type's original ``updateValue(_:forKey:)`` method is also
-/// available, and so is ``index(forKey:)``, grouping/uniquing initializers
-/// (``init(uniqueKeysWithValues:)-5ux9r``, ``init(_:uniquingKeysWith:)-2y39b``,
-/// ``init(grouping:by:)-6mahw``), methods for merging one dictionary with
-/// another (``merge(_:uniquingKeysWith:)-6ka2i``,
-/// ``merging(_:uniquingKeysWith:)-4z49c``), filtering dictionary entries
-/// (``filter(_:)``), transforming values (``mapValues(_:)``), and a combination
-/// of these two (``compactMapValues(_:)``).
+/// The `Dictionary` type's original `updateValue(_:forKey:)` method is also
+/// available, and so is `index(forKey:)`, grouping/uniquing initializers
+/// (`init(uniqueKeysWithValues:)`, `init(_:uniquingKeysWith:)`,
+/// `init(grouping:by:)`), methods for merging one dictionary with another
+/// (`merge`, `merging`), filtering dictionary entries (`filter(_:)`),
+/// transforming values (`mapValues(_:)`), and a combination of these two
+/// (`compactMapValues(_:)`).
 ///
 /// ### Sequence and Collection Operations
 ///
@@ -108,58 +107,60 @@
 /// beginning of the collection. However, to avoid ambiguity between key-based
 /// and indexing subscripts, `OrderedDictionary` doesn't directly conform to
 /// `Collection`. Instead, it only conforms to `Sequence`, and provides a
-/// random-access collection view over its key-value pairs, called
-/// ``elements-swift.property``:
+/// random-access collection view over its key-value pairs:
 ///
 ///     responses[0] // `nil` (key-based subscript)
 ///     responses.elements[0] // `(200, "OK")` (index-based subscript)
 ///
 /// Because ordered dictionaries need to maintain unique keys, neither
 /// `OrderedDictionary` nor its `elements` view can conform to the full
-/// `MutableCollection` or `RangeReplaceableCollection` protocols.
-/// However, `OrderedDictioanr` is still able to implement some of the
-/// requirements of these protocols. In particular, it supports permutation
-/// operations from `MutableCollection`:
+/// `MutableCollection` or `RangeReplaceableCollection` protocols. However, they
+/// are able to partially implement requirements: they support mutations
+/// that merely change the order of elements, or just remove a subset of
+/// existing members:
 ///
-/// - ``swapAt(_:_:)``
-/// - ``partition(by:)``
-/// - ``sort()``, ``sort(by:)``
-/// - ``shuffle()``, ``shuffle(using:)``
-/// - ``reverse()``
+///     // Permutation operations from MutableCollection:
+///     func swapAt(_ i: Int, _ j: Int)
+///     func partition(by predicate: (Element) throws -> Bool) -> rethrows Int
+///     func sort() where Element: Comparable
+///     func sort(by predicate: (Element, Element) throws -> Bool) rethrows
+///     func shuffle()
+///     func shuffle<T: RandomNumberGenerator>(using generator: inout T)
 ///
-/// It also supports removal operations from `RangeReplaceableCollection`:
+///     // Removal operations from RangeReplaceableCollection:
+///     func removeAll(keepingCapacity: Bool = false)
+///     func remove(at index: Int) -> Element
+///     func removeSubrange(_ bounds: Range<Int>)
+///     func removeLast() -> Element
+///     func removeLast(_ n: Int)
+///     func removeFirst() -> Element
+///     func removeFirst(_ n: Int)
+///     func removeAll(where shouldBeRemoved: (Element) throws -> Bool) rethrows
 ///
-/// - ``removeAll(keepingCapacity:)``
-/// - ``remove(at:)``
-/// - ``removeSubrange(_:)-512n3``, ``removeSubrange(_:)-8rmzx``
-/// - ``removeLast()``, ``removeLast(_:)``
-/// - ``removeFirst()``, ``removeFirst(_:)``
-/// - ``removeAll(where:)``
-///
-/// `OrderedDictionary` also implements ``reserveCapacity(_:)`` from
+/// `OrderedDictionary` also implements `reserveCapacity(_)` from
 /// `RangeReplaceableCollection`, to allow for efficient insertion of a known
 /// number of elements. (However, unlike `Array` and `Dictionary`,
 /// `OrderedDictionary` does not provide a `capacity` property.)
 ///
 /// ### Keys and Values Views
 ///
-/// Like the standard `Dictionary`, `OrderedDictionary` provides ``keys`` and
-/// ``values-swift.property`` properties that provide lightweight views into
-/// the corresponding parts of the dictionary.
+/// Like the standard `Dictionary`, `OrderedDictionary` provides `keys` and
+/// `values` properties that provide lightweight views into the corresponding
+/// parts of the dictionary.
 ///
-/// The ``keys`` collection is of type ``OrderedSet``, containing all the keys
+/// The `keys` collection is of type `OrderedSet<Key>`, containing all the keys
 /// in the original dictionary.
 ///
 ///     let d: OrderedDictionary = [2: "two", 1: "one", 0: "zero"]
 ///     d.keys // [2, 1, 0] as OrderedSet<Int>
 ///
-/// The ``keys`` property is read-only, so you cannot mutate the dictionary
+/// The `keys` property is read-only, so you cannot mutate the dictionary
 /// through it. However, it returns an ordinary ordered set value, which can be
 /// copied out and then mutated if desired. (Such mutations won't affect the
 /// original dictionary value.)
 ///
-/// The ``values-swift.property`` collection is a mutable random-access
-/// ordered collection of the values in the dictionary:
+/// The `values` collection is a mutable random-access collection of the values
+/// in the dictionary:
 ///
 ///     d.values // "two", "one", "zero"
 ///     d.values[2] = "nada"
@@ -168,37 +169,40 @@
 ///     // `d` is now [2: "nada", 1: "one", 0: "two"]
 ///
 /// Both views store their contents in regular `Array` values, accessible
-/// through their ``elements-swift.property`` property.
+/// through their `elements` property.
 ///
 /// ## Performance
 ///
-/// An ordered dictionary consists of an ``OrderedSet`` of keys, alongside a
+/// Like the standard `Dictionary` type, the performance of hashing operations
+/// in `OrderedDictionary` is highly sensitive to the quality of hashing
+/// implemented by the `Key` type. Failing to correctly implement hashing can
+/// easily lead to unacceptable performance, with the severity of the effect
+/// increasing with the size of the hash table.
+///
+/// In particular, if a certain set of keys all produce the same hash value,
+/// then hash table lookups regress to searching an element in an unsorted
+/// array, i.e., a linear operation. To ensure hashed collection types exhibit
+/// their target performance, it is important to ensure that such collisions
+/// cannot be induced merely by adding a particular list of keys to the
+/// dictionary.
+///
+/// The easiest way to achieve this is to make sure `Key` implements hashing
+/// following `Hashable`'s documented best practices. The conformance must
+/// implement the `hash(into:)` requirement, and every bit of information that
+/// is compared in `==` needs to be combined into the supplied `Hasher` value.
+/// When used correctly, `Hasher` produces high-quality, randomly seeded hash
+/// values that prevent repeatable hash collisions.
+///
+/// When `Key` correctly conforms to `Hashable`, key-based lookups in an ordered
+/// dictionary is expected to take O(1) equality checks on average. Hash
+/// collisions can still occur organically, so the worst-case lookup performance
+/// is technically still O(*n*) (where *n* is the size of the dictionary);
+/// however, long lookup chains are unlikely to occur in practice.
+///
+/// ## Implementation Details
+///
+/// An ordered dictionary consists of an ordered set of keys, alongside a
 /// regular `Array` value that contains their associated values.
-/// The performance characteristics of `OrderedDictionary` are mostly dictated
-/// by this setup.
-///
-/// - Looking up a member in an ordered dictionary is expected to execute
-///    a constant number of hashing and equality check operations, just like
-///    the standard `Dictionary`.
-/// - `OrderedDictionary` is also able to append new items at the end of the
-///    dictionary with an expected amortized complexity of O(1), similar to
-///    inserting new items into `Dictionary`.
-/// - Unfortunately, removing or inserting items at the start or middle of an
-///    `OrderedDictionary` has linear complexity, making these significantly
-///    slower than `Dictionary`.
-/// - Storing keys and values outside of the hash table makes
-///    `OrderedDictionary` more memory efficient than most alternative
-///    ordered dictionary representations. It can sometimes also be more memory
-///    efficient than the standard `Dictionary`, despote the additional
-///    functionality of preserving element ordering.
-///
-/// Like all hashed data structures, ordered dictionaries are extremely
-/// sensitive to the quality of the `Key` type's `Hashable` conformance.
-/// All complexity guarantees are null and void if `Key` implements `Hashable`
-/// incorrectly.
-///
-/// See ``OrderedSet`` for a more detailed discussion of these performance
-/// characteristics.
 @frozen
 public struct OrderedDictionary<Key: Hashable, Value> {
   @usableFromInline
@@ -219,7 +223,7 @@ public struct OrderedDictionary<Key: Hashable, Value> {
 }
 
 extension OrderedDictionary {
-  /// A read-only ordered collection view for the keys contained in this dictionary, as
+  /// A read-only collection view for the keys contained in this dictionary, as
   /// an `OrderedSet`.
   ///
   /// - Complexity: O(1)
@@ -227,14 +231,13 @@ extension OrderedDictionary {
   @inline(__always)
   public var keys: OrderedSet<Key> { _keys }
 
-  /// A mutable collection view containing the ordered values in this dictionary.
+  /// A mutable collection view containing the values in this dictionary.
   ///
   /// - Complexity: O(1)
   @inlinable
   @inline(__always)
   public var values: Values {
     get { Values(_base: self) }
-    @inline(__always) // https://github.com/apple/swift-collections/issues/164
     _modify {
       var values = Values(_base: self)
       self = [:]
@@ -364,57 +367,39 @@ extension OrderedDictionary {
       }
       _checkInvariants()
     }
-    @inline(__always) // https://github.com/apple/swift-collections/issues/164
     _modify {
-      var value: Value?
-      let (index, bucket) = _prepareForKeyingModify(key, &value)
-      defer {
-        _finalizeKeyingModify(key, index, bucket, &value)
+      let (index, bucket) = _keys._find(key)
+
+      // To support in-place mutations better, we swap the value to the end of
+      // the array, pop it off, then put things back in place when we're done.
+      var value: Value? = nil
+      if let index = index {
+        _values.swapAt(index, _values.count - 1)
+        value = _values.removeLast()
       }
+
+      defer {
+        switch (index, value) {
+        case let (index?, value?): // Assign
+          _values.append(value)
+          _values.swapAt(index, _values.count - 1)
+        case let (index?, nil): // Remove
+          if index < _values.count {
+            let standin = _values.remove(at: index)
+            _values.append(standin)
+          }
+          _keys._removeExistingMember(at: index, in: bucket)
+        case let (nil, value?): // Insert
+          _keys._appendNew(key, in: bucket)
+          _values.append(value)
+        case (nil, nil): // Noop
+          break
+        }
+        _checkInvariants()
+      }
+
       yield &value
     }
-  }
-
-  @inlinable
-  internal mutating func _prepareForKeyingModify(
-    _ key: Key,
-    _ value: inout Value?
-  ) -> (index: Int?, bucket: _HashTable.Bucket) {
-    let (index, bucket) = _keys._find(key)
-
-    // To support in-place mutations better, we swap the value to the end of
-    // the array, pop it off, then put things back in place when we're done.
-    if let index = index {
-      _values.swapAt(index, _values.count - 1)
-      value = _values.removeLast()
-    }
-    return (index, bucket)
-  }
-
-  @inlinable
-  internal mutating func _finalizeKeyingModify(
-    _ key: Key,
-    _ index: Int?,
-    _ bucket: _HashTable.Bucket,
-    _ value: inout Value?
-  ) {
-    switch (index, value) {
-    case let (index?, value?): // Assign
-      _values.append(value)
-      _values.swapAt(index, _values.count - 1)
-    case let (index?, nil): // Remove
-      if index < _values.count {
-        let standin = _values.remove(at: index)
-        _values.append(standin)
-      }
-      _keys._removeExistingMember(at: index, in: bucket)
-    case let (nil, value?): // Insert
-      _keys._appendNew(key, in: bucket)
-      _values.append(value)
-    case (nil, nil): // Noop
-      break
-    }
-    _checkInvariants()
   }
 
   /// Accesses the value with the given key. If the dictionary doesn't contain
@@ -447,7 +432,7 @@ extension OrderedDictionary {
   /// of each letter in a string:
   ///
   ///     let message = "Hello, Elle!"
-  ///     var letterCounts: OrderedDictionary<Character, Int> = [:]
+  ///     var letterCounts: [Character: Int] = [:]
   ///     for letter in message {
   ///         letterCounts[letter, default: 0] += 1
   ///     }
@@ -487,42 +472,26 @@ extension OrderedDictionary {
       guard let offset = _keys.firstIndex(of: key) else { return defaultValue() }
       return _values[offset]
     }
-    @inline(__always) // https://github.com/apple/swift-collections/issues/164
     _modify {
-      var (index, value) = _prepareForDefaultedModify(key, defaultValue)
+      let (inserted, index) = _keys.append(key)
+      if inserted {
+        assert(index == _values.count)
+        _values.append(defaultValue())
+      }
+      var value: Value = _values.withUnsafeMutableBufferPointer { buffer in
+        assert(index < buffer.count)
+        return (buffer.baseAddress! + index).move()
+      }
       defer {
-        _finalizeDefaultedModify(index, &value)
+        _values.withUnsafeMutableBufferPointer { buffer in
+          assert(index < buffer.count)
+          (buffer.baseAddress! + index).initialize(to: value)
+        }
       }
       yield &value
     }
   }
 
-  @inlinable
-  internal mutating func _prepareForDefaultedModify(
-    _ key: Key,
-    _ defaultValue: () -> Value
-  ) -> (index: Int, value: Value) {
-    let (inserted, index) = _keys.append(key)
-    if inserted {
-      assert(index == _values.count)
-      _values.append(defaultValue())
-    }
-    let value: Value = _values.withUnsafeMutableBufferPointer { buffer in
-      assert(index < buffer.count)
-      return (buffer.baseAddress! + index).move()
-    }
-    return (index, value)
-  }
-
-  @inlinable
-  internal mutating func _finalizeDefaultedModify(
-    _ index: Int, _ value: inout Value
-  ) {
-    _values.withUnsafeMutableBufferPointer { buffer in
-      assert(index < buffer.count)
-      (buffer.baseAddress! + index).initialize(to: value)
-    }
-  }
 }
 
 extension OrderedDictionary {
@@ -658,7 +627,7 @@ extension OrderedDictionary {
   /// in a string:
   ///
   ///     let message = "Hello, Elle!"
-  ///     var letterCounts: OrderedDictionary<Character, Int> = [:]
+  ///     var letterCounts: [Character: Int] = [:]
   ///     for letter in message {
   ///         letterCounts.updateValue(forKey: letter, default: 0) { count in
   ///             count += 1
@@ -798,25 +767,20 @@ extension OrderedDictionary {
   ///
   ///     // Keeping existing value for key "a":
   ///     dictionary.merge(zip(["a", "c"], [3, 4])) { (current, _) in current }
-  ///     // ["a": 1, "b": 2, "c": 4]
+  ///     // ["b": 2, "a": 1, "c": 4]
   ///
   ///     // Taking the new value for key "a":
   ///     dictionary.merge(zip(["a", "d"], [5, 6])) { (_, new) in new }
-  ///     // ["a": 5, "b": 2, "c": 4, "d": 6]
-  ///
-  /// This operation preserves the order of keys in the original dictionary.
-  /// New key-value pairs are appended to the end in the order they appear in
-  /// the given sequence.
+  ///     // ["b": 2, "a": 5, "c": 4, "d": 6]
   ///
   /// - Parameters:
-  ///   - keysAndValues: A sequence of key-value pairs.
+  ///   - other: A sequence of key-value pairs.
   ///   - combine: A closure that takes the current and new values for any
   ///     duplicate keys. The closure returns the desired value for the final
   ///     dictionary.
   ///
   /// - Complexity: Expected to be O(*n*) on average, where *n* is the number of
   ///    elements in `keysAndValues`, if `Key` implements high-quality hashing.
-  @_disfavoredOverload // https://github.com/apple/swift-collections/issues/125
   @inlinable
   public mutating func merge<S: Sequence>(
     _ keysAndValues: __owned S,
@@ -849,18 +813,14 @@ extension OrderedDictionary {
   ///
   ///     // Keeping existing value for key "a":
   ///     dictionary.merge(zip(["a", "c"], [3, 4])) { (current, _) in current }
-  ///     // ["a": 1, "b": 2, "c": 4]
+  ///     // ["b": 2, "a": 1, "c": 4]
   ///
   ///     // Taking the new value for key "a":
   ///     dictionary.merge(zip(["a", "d"], [5, 6])) { (_, new) in new }
-  ///     // ["a": 5, "b": 2, "c": 4, "d": 6]
-  ///
-  /// This operation preserves the order of keys in the original dictionary.
-  /// New key-value pairs are appended to the end in the order they appear in
-  /// the given sequence.
+  ///     // ["b": 2, "a": 5, "c": 4, "d": 6]
   ///
   /// - Parameters:
-  ///   - keysAndValues: A sequence of key-value pairs.
+  ///   - other: A sequence of key-value pairs.
   ///   - combine: A closure that takes the current and new values for any
   ///     duplicate keys. The closure returns the desired value for the final
   ///     dictionary.
@@ -894,9 +854,9 @@ extension OrderedDictionary {
   ///     let newKeyValues = zip(["a", "b"], [3, 4])
   ///
   ///     let keepingCurrent = dictionary.merging(newKeyValues) { (current, _) in current }
-  ///     // ["a": 1, "b": 2]
+  ///     // ["b": 2, "a": 1]
   ///     let replacingCurrent = dictionary.merging(newKeyValues) { (_, new) in new }
-  ///     // ["a": 3, "b": 4]
+  ///     // ["b": 4, "a": 3]
   ///
   /// - Parameters:
   ///   - other: A sequence of key-value pairs.
@@ -905,14 +865,11 @@ extension OrderedDictionary {
   ///     dictionary.
   ///
   /// - Returns: A new dictionary with the combined keys and values of this
-  ///    dictionary and `other`. The order of keys in the result dictionary
-  ///    matches that of `self`, with additional key-value pairs (if any)
-  ///    appended at the end in the order they appear in `other`.
+  ///   dictionary and `other`.
   ///
   /// - Complexity: Expected to be O(`count` + *n*) on average, where *n* is the
   ///    number of elements in `keysAndValues`, if `Key` implements high-quality
   ///    hashing.
-  @_disfavoredOverload // https://github.com/apple/swift-collections/issues/125
   @inlinable
   public __consuming func merging<S: Sequence>(
     _ other: __owned S,
@@ -940,9 +897,9 @@ extension OrderedDictionary {
   ///     let newKeyValues = zip(["a", "b"], [3, 4])
   ///
   ///     let keepingCurrent = dictionary.merging(newKeyValues) { (current, _) in current }
-  ///     // ["a": 1, "b": 2]
+  ///     // ["b": 2, "a": 1]
   ///     let replacingCurrent = dictionary.merging(newKeyValues) { (_, new) in new }
-  ///     // ["a": 3, "b": 4]
+  ///     // ["b": 4, "a": 3]
   ///
   /// - Parameters:
   ///   - other: A sequence of key-value pairs.
@@ -951,9 +908,7 @@ extension OrderedDictionary {
   ///     dictionary.
   ///
   /// - Returns: A new dictionary with the combined keys and values of this
-  ///    dictionary and `other`. The order of keys in the result dictionary
-  ///    matches that of `self`, with additional key-value pairs (if any)
-  ///    appended at the end in the order they appear in `other`.
+  ///   dictionary and `other`.
   ///
   /// - Complexity: Expected to be O(`count` + *n*) on average, where *n* is the
   ///    number of elements in `keysAndValues`, if `Key` implements high-quality
@@ -977,8 +932,7 @@ extension OrderedDictionary {
   ///   argument and returns a Boolean value indicating whether the pair
   ///   should be included in the returned dictionary.
   ///
-  /// - Returns: A dictionary of the key-value pairs that `isIncluded` allows,
-  ///    in the same order that they appear in `self`.
+  /// - Returns: A dictionary of the key-value pairs that `isIncluded` allows.
   ///
   /// - Complexity: O(`count`)
   @inlinable
@@ -1002,7 +956,7 @@ extension OrderedDictionary {
   ///   accepts each value of the dictionary as its parameter and returns a
   ///   transformed value of the same or of a different type.
   /// - Returns: A dictionary containing the keys and transformed values of
-  ///   this dictionary, in the same order.
+  ///   this dictionary.
   ///
   /// - Complexity: O(`count`)
   @inlinable
@@ -1037,7 +991,7 @@ extension OrderedDictionary {
   ///   optional transformed value of the same or of a different type.
   ///
   /// - Returns: A dictionary containing the keys and non-`nil` transformed
-  ///   values of this dictionary, in the same order.
+  ///   values of this dictionary.
   ///
   /// - Complexity: O(`count`)
   @inlinable

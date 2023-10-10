@@ -9,10 +9,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#if !COLLECTIONS_SINGLE_MODULE
-import _CollectionsUtilities
-#endif
-
 extension OrderedSet: Sequence {
   /// The type that allows iteration over an ordered set's elements.
   public typealias Iterator = IndexingIterator<Self>
@@ -302,5 +298,3 @@ extension OrderedSet: RandomAccessCollection {
     _elements._failEarlyRangeCheck(range, bounds: bounds)
   }
 }
-
-extension OrderedSet: _UniqueCollection {}

@@ -11,10 +11,6 @@
 
 // The parts of MutableCollection that OrderedSet is able to implement.
 
-#if !COLLECTIONS_SINGLE_MODULE
-import _CollectionsUtilities
-#endif
-
 extension OrderedSet {
   /// Exchanges the values at the specified indices of the set.
   ///
@@ -220,7 +216,7 @@ extension OrderedSet {
   ///   and `c` are incomparable, then `a` and `c` are also incomparable.
   ///   (Transitive incomparability)
   ///
-  /// The sorting algorithm is guaranteed to be stable. A stable sort
+  /// The sorting algorithm is not guaranteed to be stable. A stable sort
   /// preserves the relative order of elements for which
   /// `areInIncreasingOrder` does not establish an order.
   ///
@@ -270,8 +266,8 @@ extension OrderedSet where Element: Comparable {
   ///     print(students)
   ///     // Prints "["Peter", "Kweku", "Kofi", "Akosua", "Abena"]"
   ///
-  /// The sorting algorithm is guaranteed to be stable. A stable sort
-  /// preserves the relative order of elements that compare as equal.
+  /// The sorting algorithm is not guaranteed to be stable. A stable sort
+  /// preserves the relative order of elements that compare equal.
   ///
   /// - Complexity: O(*n* log *n*), where *n* is the length of the collection.
   @inlinable

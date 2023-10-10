@@ -9,24 +9,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-#if !COLLECTIONS_SINGLE_MODULE
-import _CollectionsUtilities
-#endif
-
 // This file contains exported but non-public entry points to support clear box
 // testing.
 
 extension Deque {
-  /// True if consistency checking is enabled in the implementation of this
-  /// type, false otherwise.
-  ///
-  /// Documented performance promises are null and void when this property
-  /// returns true -- for example, operations that are documented to take
-  /// O(1) time might take O(*n*) time, or worse.
-  public static var _isConsistencyCheckingEnabled: Bool {
-    _isCollectionsInternalCheckingEnabled
-  }
-
   /// The maximum number of elements this deque is currently able to store
   /// without reallocating its storage buffer.
   ///
@@ -75,9 +61,9 @@ extension Deque {
         storage.update { target in
           let segments = target.mutableSegments()
           let c = segments.first.count
-          segments.first.initializeAll(fromContentsOf: source.prefix(c))
+          segments.first._initialize(from: source.prefix(c)._rebased())
           if let second = segments.second {
-            second.initializeAll(fromContentsOf: source.dropFirst(c))
+            second._initialize(from: source.dropFirst(c)._rebased())
           }
         }
       }

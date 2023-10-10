@@ -10,12 +10,8 @@
 //===----------------------------------------------------------------------===//
 
 import XCTest
-#if COLLECTIONS_SINGLE_MODULE
-@_spi(Testing) import Collections
-#else
 import _CollectionsTestSupport
 @_spi(Testing) import DequeModule
-#endif
 
 final class DequeTests: CollectionTestCase {
   func test_testingSPIs() {

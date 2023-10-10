@@ -2,16 +2,12 @@
 //
 // This source file is part of the Swift Collections open source project
 //
-// Copyright (c) 2021 - 2023 Apple Inc. and the Swift project authors
+// Copyright (c) 2021 Apple Inc. and the Swift project authors
 // Licensed under Apache License v2.0 with Runtime Library Exception
 //
 // See https://swift.org/LICENSE.txt for license information
 //
 //===----------------------------------------------------------------------===//
-
-#if !COLLECTIONS_SINGLE_MODULE
-import _CollectionsUtilities
-#endif
 
 extension OrderedDictionary {
   /// A view of an ordered dictionary's values as a standalone collection.
@@ -25,26 +21,6 @@ extension OrderedDictionary {
     internal init(_base: OrderedDictionary) {
       self._base = _base
     }
-  }
-}
-
-extension OrderedDictionary.Values: Sendable
-where Key: Sendable, Value: Sendable {}
-
-extension OrderedDictionary.Values: CustomStringConvertible {
-  // A textual representation of this instance.
-  public var description: String {
-    _arrayDescription(for: self)
-  }
-}
-
-extension OrderedDictionary.Values: CustomDebugStringConvertible {
-  /// A textual representation of this instance, suitable for debugging.
-  public var debugDescription: String {
-    _arrayDescription(
-      for: self,
-      debug: true,
-      typeName: "OrderedDictionary<\(Key.self), \(Value.self)>.Keys")
   }
 }
 
@@ -307,7 +283,6 @@ extension OrderedDictionary.Values: MutableCollection {
     get {
       _base._values[position]
     }
-    @inline(__always) // https://github.com/apple/swift-collections/issues/164
     _modify {
       yield &_base._values[position]
     }

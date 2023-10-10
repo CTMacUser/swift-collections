@@ -2,16 +2,12 @@
 //
 // This source file is part of the Swift Collections open source project
 //
-// Copyright (c) 2021 - 2023 Apple Inc. and the Swift project authors
+// Copyright (c) 2021 Apple Inc. and the Swift project authors
 // Licensed under Apache License v2.0 with Runtime Library Exception
 //
 // See https://swift.org/LICENSE.txt for license information
 //
 //===----------------------------------------------------------------------===//
-
-#if !COLLECTIONS_SINGLE_MODULE
-import _CollectionsUtilities
-#endif
 
 extension OrderedDictionary {
   /// A view of the contents of an ordered dictionary as a random-access
@@ -29,9 +25,6 @@ extension OrderedDictionary {
   }
 }
 
-extension OrderedDictionary.Elements: Sendable
-where Key: Sendable, Value: Sendable {}
-
 extension OrderedDictionary {
   /// A view of the contents of this dictionary as a random-access collection.
   ///
@@ -42,7 +35,6 @@ extension OrderedDictionary {
     get {
       Elements(_base: self)
     }
-    @inline(__always) // https://github.com/apple/swift-collections/issues/164
     _modify {
       var elements = Elements(_base: self)
       self = Self()
@@ -71,7 +63,6 @@ extension OrderedDictionary.Elements {
     get {
       _base.values
     }
-    @inline(__always) // https://github.com/apple/swift-collections/issues/164
     _modify {
       var values = OrderedDictionary.Values(_base: _base)
       self = Self(_base: .init())
@@ -333,18 +324,14 @@ extension OrderedDictionary.Elements: RandomAccessCollection {
 }
 
 extension OrderedDictionary.Elements: CustomStringConvertible {
-  // A textual representation of this instance.
   public var description: String {
     _base.description
   }
 }
 
 extension OrderedDictionary.Elements: CustomDebugStringConvertible {
-  /// A textual representation of this instance, suitable for debugging.
   public var debugDescription: String {
-    _dictionaryDescription(
-      for: self,
-      debug: true,
+    _base._debugDescription(
       typeName: "OrderedDictionary<\(Key.self), \(Value.self)>.Elements")
   }
 }
@@ -441,7 +428,7 @@ extension OrderedDictionary.Elements {
   ///   and `c` are incomparable, then `a` and `c` are also incomparable.
   ///   (Transitive incomparability)
   ///
-  /// The sorting algorithm is guaranteed to be stable. A stable sort
+  /// The sorting algorithm is not guaranteed to be stable. A stable sort
   /// preserves the relative order of elements for which
   /// `areInIncreasingOrder` does not establish an order.
   ///
@@ -469,8 +456,8 @@ extension OrderedDictionary.Elements where Key: Comparable {
   /// sorted in ascending order. (`Value` doesn't need to conform to
   /// `Comparable` because the keys are guaranteed to be unique.)
   ///
-  /// The sorting algorithm is guaranteed to be stable. A stable sort
-  /// preserves the relative order of elements that compare as equal.
+  /// The sorting algorithm is not guaranteed to be stable. A stable sort
+  /// preserves the relative order of elements that compare equal.
   ///
   /// - Complexity: O(*n* log *n*), where *n* is the length of the collection.
   @inlinable

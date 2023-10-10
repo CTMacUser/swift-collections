@@ -10,14 +10,8 @@
 //===----------------------------------------------------------------------===//
 
 import XCTest
-#if COLLECTIONS_SINGLE_MODULE
-@_spi(Testing) import Collections
-#else
 @_spi(Testing) import OrderedCollections
 import _CollectionsTestSupport
-#endif
-
-extension OrderedSet: SetAPIExtras {}
 
 class OrderedSetTests: CollectionTestCase {
   func test_init_uncheckedUniqueElements_concrete() {
@@ -156,23 +150,11 @@ class OrderedSetTests: CollectionTestCase {
     expectEqual(c.debugDescription, "OrderedSet<Int>([0, 1, 2, 3, 4])")
   }
 
-  func test_SubSequence_descriptions() {
-    let s: OrderedSet = [0, 1, 2, 3]
-
-    let slice = s[1 ..< 3]
-
-    expectEqual(slice.description, "[1, 2]")
-    expectEqual(
-      slice.debugDescription,
-      "OrderedSet<Int>.SubSequence([1, 2])")
-
-  }
-
   func test_customReflectable() {
     do {
       let set: OrderedSet<Int> = [1, 2, 3]
       let mirror = Mirror(reflecting: set)
-      expectEqual(mirror.displayStyle, .set)
+      expectEqual(mirror.displayStyle, .collection)
       expectNil(mirror.superclassMirror)
       expectTrue(mirror.children.compactMap { $0.label }.isEmpty) // No label
       expectEqualElements(mirror.children.map { $0.value as? Int }, set.map { $0 })
@@ -374,7 +356,7 @@ class OrderedSetTests: CollectionTestCase {
         let count = layout.count
         withEvery("offset", in: 0 ... count) { offset in
           var set = OrderedSet<Int>(layout: layout)
-          withHiddenCopies(if: isShared, of: &set, checker: { $0._checkInvariants() }) { set in
+          withHiddenCopies(if: isShared, of: &set) { set in
             let i = set.index(set.startIndex, offsetBy: offset)
             let (inserted, index) = set.insert(count, at: i)
             expectTrue(inserted)
@@ -529,7 +511,7 @@ class OrderedSetTests: CollectionTestCase {
         let count = layout.count
         withEvery("a", in: 0 ..< count) { a in
           var set = OrderedSet(layout: layout)
-          withHiddenCopies(if: isShared, of: &set, checker: { $0._checkInvariants() }) { set in
+          withHiddenCopies(if: isShared, of: &set) { set in
             let b = count - a - 1
             let ai = set._index(at: a)
             let bi = set._index(at: b)
@@ -553,7 +535,7 @@ class OrderedSetTests: CollectionTestCase {
         withEvery("isShared", in: [false, true]) { isShared in
           let count = layout.count
           var set = OrderedSet(layout: layout)
-          withHiddenCopies(if: isShared, of: &set, checker: { $0._checkInvariants() }) { set in
+          withHiddenCopies(if: isShared, of: &set) { set in
             let pivot = set.partition(by: { $0.isMultiple(of: 2) })
             withEvery("item", in: 0 ..< count) { item in
               expectNotNil(set.firstIndex(of: item)) { index in
@@ -577,7 +559,7 @@ class OrderedSetTests: CollectionTestCase {
         withEvery("isShared", in: [false, true]) { isShared in
           let count = layout.count
           var set = OrderedSet(layout: layout)
-          withHiddenCopies(if: isShared, of: &set, checker: { $0._checkInvariants() }) { set in
+          withHiddenCopies(if: isShared, of: &set) { set in
             do {
               let pivot = set.partition(by: { _ in false })
               expectEqual(pivot, set.endIndex)
@@ -603,7 +585,7 @@ class OrderedSetTests: CollectionTestCase {
           var rng = RepeatableRandomNumberGenerator(seed: seed)
           let contents = (0 ..< count).shuffled(using: &rng)
           var set = OrderedSet(layout: layout, contents: contents)
-          withHiddenCopies(if: isShared, of: &set, checker: { $0._checkInvariants() }) { set in
+          withHiddenCopies(if: isShared, of: &set) { set in
             set.sort()
             expectEqualElements(set, 0 ..< count)
 
@@ -623,7 +605,7 @@ class OrderedSetTests: CollectionTestCase {
           let count = layout.count
           var contents = Array(0 ..< count)
           var set = OrderedSet(layout: layout, contents: 0 ..< count)
-          withHiddenCopies(if: isShared, of: &set, checker: { $0._checkInvariants() }) { set in
+          withHiddenCopies(if: isShared, of: &set) { set in
             var rng1 = RepeatableRandomNumberGenerator(seed: seed)
             contents.shuffle(using: &rng1)
 
@@ -655,7 +637,7 @@ class OrderedSetTests: CollectionTestCase {
         let count = layout.count
         var contents = Array(0 ..< count)
         var set = OrderedSet(layout: layout, contents: 0 ..< count)
-        withHiddenCopies(if: isShared, of: &set, checker: { $0._checkInvariants() }) { set in
+        withHiddenCopies(if: isShared, of: &set) { set in
           contents.reverse()
           set.reverse()
           expectEqualElements(set, contents)
@@ -669,7 +651,7 @@ class OrderedSetTests: CollectionTestCase {
       withEvery("offset", in: 0 ..< layout.count) { offset in
         withEvery("isShared", in: [false, true]) { isShared in
           var set = OrderedSet(layout: layout)
-          withHiddenCopies(if: isShared, of: &set, checker: { $0._checkInvariants() }) { set in
+          withHiddenCopies(if: isShared, of: &set) { set in
             let count = layout.count
             let index = set._index(at: offset)
             let old = set.remove(at: index)
@@ -716,7 +698,7 @@ class OrderedSetTests: CollectionTestCase {
       withEvery("item", in: 0 ..< layout.count) { item in
         withEvery("isShared", in: [false, true]) { isShared in
           var set = OrderedSet(layout: layout)
-          withHiddenCopies(if: isShared, of: &set, checker: { $0._checkInvariants() }) { set in
+          withHiddenCopies(if: isShared, of: &set) { set in
             let count = layout.count
             let old = set.remove(item)
             expectEqual(old, item)
@@ -756,7 +738,7 @@ class OrderedSetTests: CollectionTestCase {
           var set = OrderedSet(layout: layout)
           let low = offsetRange.lowerBound
           let high = offsetRange.upperBound
-          withHiddenCopies(if: isShared, of: &set, checker: { $0._checkInvariants() }) { set in
+          withHiddenCopies(if: isShared, of: &set) { set in
             let count = layout.count
             let removedRange = set._indexRange(at: low ..< high)
             set.removeSubrange(removedRange)
@@ -956,9 +938,6 @@ class OrderedSetTests: CollectionTestCase {
       let actual1 = u1.union(u2)
       expectEqualElements(actual1, expected)
 
-      let actual1u = u1.union(u2.unordered)
-      expectEqualElements(actual1u, expected)
-
       let actual2 = actual1.union(u2).union(u1)
       expectEqualElements(actual2, expected)
     }
@@ -984,26 +963,6 @@ class OrderedSetTests: CollectionTestCase {
     }
   }
 
-  func test_formUnion_UnorderedView() {
-    withSampleRanges { r1, r2 in
-      let expected = Set(r1).union(r2).sorted()
-
-      var res: OrderedSet<Int> = []
-
-      let u1 = OrderedSet(r1)
-      res.formUnion(u1.unordered)
-      expectEqualElements(res, r1)
-
-      let u2 = OrderedSet(r2)
-      res.formUnion(u2.unordered)
-      expectEqualElements(res, expected)
-
-      res.formUnion(u1.unordered)
-      res.formUnion(u2.unordered)
-      expectEqualElements(res, expected)
-    }
-  }
-
   func test_union_generic() {
     withSampleRanges { r1, r2 in
       let expected = Set(r1).union(r2).sorted()
@@ -1013,13 +972,6 @@ class OrderedSetTests: CollectionTestCase {
 
       let u3 = u2.union(r1)
       expectEqualElements(u3, expected)
-
-      let a = Array(r2)
-      let actual3 = u1.union(a)
-      expectEqualElements(actual3, expected)
-
-      let actual4 = u1.union(a + a)
-      expectEqualElements(actual4, expected)
     }
   }
 
@@ -1050,9 +1002,6 @@ class OrderedSetTests: CollectionTestCase {
       let actual1 = u1.intersection(u2)
       expectEqualElements(actual1, expected)
 
-      let actual1u = u1.intersection(u2.unordered)
-      expectEqualElements(actual1u, expected)
-
       let actual2 = actual1.intersection(r1)
       expectEqualElements(actual2, expected)
     }
@@ -1075,23 +1024,6 @@ class OrderedSetTests: CollectionTestCase {
     }
   }
 
-  func test_formIntersection_UnorderedView() {
-    withSampleRanges { r1, r2 in
-      let expected = Set(r1).intersection(r2).sorted()
-
-      let u1 = OrderedSet(r1)
-      let u2 = OrderedSet(r2)
-      var res = u1
-      res.formIntersection(u2.unordered)
-      expectEqualElements(res, expected)
-      expectEqualElements(u1, r1)
-
-      res.formIntersection(u1.unordered)
-      res.formIntersection(u2.unordered)
-      expectEqualElements(res, expected)
-    }
-  }
-
   func test_intersection_generic() {
     withSampleRanges { r1, r2 in
       let expected = Set(r1).intersection(r2).sorted()
@@ -1102,13 +1034,6 @@ class OrderedSetTests: CollectionTestCase {
 
       let actual2 = actual1.intersection(r1).intersection(r2)
       expectEqualElements(actual2, expected)
-
-      let a = Array(r2)
-      let actual3 = u1.intersection(a)
-      expectEqualElements(actual3, expected)
-
-      let actual4 = u1.intersection(a + a)
-      expectEqualElements(actual4, expected)
     }
   }
 
@@ -1135,9 +1060,6 @@ class OrderedSetTests: CollectionTestCase {
       let actual1 = u1.symmetricDifference(u2)
       expectEqualElements(actual1, expected)
 
-      let actual1u = u1.symmetricDifference(u2.unordered)
-      expectEqualElements(actual1u, expected)
-
       let actual2 = actual1.symmetricDifference(u1).symmetricDifference(u2)
       expectEqual(actual2.count, 0)
     }
@@ -1160,23 +1082,6 @@ class OrderedSetTests: CollectionTestCase {
     }
   }
 
-  func test_formSymmetricDifference_UnorderedView() {
-    withSampleRanges { r1, r2 in
-      let expected = Set(r1).symmetricDifference(r2).sorted()
-
-      let u1 = OrderedSet(r1)
-      let u2 = OrderedSet(r2)
-      var res = u1
-      res.formSymmetricDifference(u2.unordered)
-      expectEqualElements(res, expected)
-      expectEqualElements(u1, r1)
-
-      res.formSymmetricDifference(u1.unordered)
-      res.formSymmetricDifference(u2.unordered)
-      expectEqual(res.count, 0)
-    }
-  }
-
   func test_symmetricDifference_generic() {
     withSampleRanges { r1, r2 in
       let expected = Set(r1).symmetricDifference(r2).sorted()
@@ -1187,13 +1092,6 @@ class OrderedSetTests: CollectionTestCase {
 
       let actual2 = actual1.symmetricDifference(r1).symmetricDifference(r2)
       expectEqual(actual2.count, 0)
-
-      let a = Array(r2)
-      let actual3 = u1.symmetricDifference(a)
-      expectEqualElements(actual3, expected)
-
-      let actual4 = u1.symmetricDifference(a + a)
-      expectEqualElements(actual4, expected)
     }
   }
 
@@ -1220,9 +1118,6 @@ class OrderedSetTests: CollectionTestCase {
       let actual1 = u1.subtracting(u2)
       expectEqualElements(actual1, expected)
 
-      let actual1u = u1.subtracting(u2.unordered)
-      expectEqualElements(actual1u, expected)
-
       let actual2 = actual1.subtracting(u2)
       expectEqualElements(actual2, expected)
     }
@@ -1244,22 +1139,6 @@ class OrderedSetTests: CollectionTestCase {
     }
   }
 
-  func test_subtract_UnorderedView() {
-    withSampleRanges { r1, r2 in
-      let expected = Set(r1).subtracting(r2).sorted()
-
-      let u1 = OrderedSet(r1)
-      let u2 = OrderedSet(r2)
-      var res = u1
-      res.subtract(u2.unordered)
-      expectEqualElements(res, expected)
-      expectEqualElements(u1, r1)
-
-      res.subtract(u2.unordered)
-      expectEqualElements(res, expected)
-    }
-  }
-
   func test_subtracting_generic() {
     withSampleRanges { r1, r2 in
       let expected = Set(r1).subtracting(r2).sorted()
@@ -1270,13 +1149,6 @@ class OrderedSetTests: CollectionTestCase {
 
       let actual2 = actual1.subtracting(r2)
       expectEqualElements(actual2, expected)
-
-      let a = Array(r2)
-      let actual3 = u1.subtracting(a)
-      expectEqualElements(actual3, expected)
-
-      let actual4 = u1.subtracting(a + a)
-      expectEqualElements(actual4, expected)
     }
   }
 
@@ -1324,197 +1196,168 @@ class OrderedSetTests: CollectionTestCase {
     }
   }
 
-  func test_isEqual() {
-    withEvery("unit", in: [1, 3, 7, 10, 20, 50]) { unit in
-      SampleRanges(unit: unit).withEveryPair { r1, r2 in
-        let expected = Set(r1) == Set(r2)
-        let a = OrderedSet(r1)
-        let b = OrderedSet(r2)
-        let c = Set(r2)
-        let d = Array(r2)
-
-        func checkSequence<S: Sequence>(
-          _ set: OrderedSet<Int>,
-          _ other: S
-        ) -> Bool where S.Element == Int {
-          set.isEqualSet(to: other)
-        }
-
-        expectEqual(a.isEqualSet(to: b), expected)
-        expectEqual(a.isEqualSet(to: b.unordered), expected)
-        expectEqual(a.isEqualSet(to: c), expected)
-
-        expectEqual(checkSequence(a, b), expected)
-        expectEqual(checkSequence(a, c), expected)
-        expectEqual(a.isEqualSet(to: d), expected)
-        expectEqual(a.isEqualSet(to: d + d), expected)
-        expectEqual(a.isEqualSet(to: r2), expected)
-      }
-    }
-  }
-
-  func test_isSubset() {
+  func test_isSubset_Self() {
     withEvery("unit", in: [1, 3, 7, 10, 20, 50]) { unit in
       SampleRanges(unit: unit).withEveryPair { r1, r2 in
         let expected = Set(r1).isSubset(of: r2)
         let a = OrderedSet(r1)
         let b = OrderedSet(r2)
-        let c = Set(r2)
-        let d = Array(r2)
-
-        func checkSequence<S: Sequence>(
-          _ set: OrderedSet<Int>,
-          _ other: S
-        ) -> Bool where S.Element == Int {
-          set.isSubset(of: other)
-        }
-
         expectEqual(a.isSubset(of: b), expected)
-        expectEqual(a.isSubset(of: b.unordered), expected)
-        expectEqual(a.isSubset(of: c), expected)
-
-        expectEqual(checkSequence(a, b), expected)
-        expectEqual(checkSequence(a, c), expected)
-        expectEqual(a.isSubset(of: d), expected)
-        expectEqual(a.isSubset(of: d + d), expected)
-        expectEqual(a.isSubset(of: r2), expected)
       }
     }
   }
 
-  func test_isSuperset() {
+  func test_isSubset_Set() {
+    withEvery("unit", in: [1, 3, 7, 10, 20, 50]) { unit in
+      SampleRanges(unit: unit).withEveryPair { r1, r2 in
+        let expected = Set(r1).isSubset(of: r2)
+        let a = OrderedSet(r1)
+        let b = Set(r2)
+        expectEqual(a.isSubset(of: b), expected)
+      }
+    }
+  }
+
+  func test_isSubset_generic() {
+    withEvery("unit", in: [1, 3, 7, 10, 20, 50]) { unit in
+      SampleRanges(unit: unit).withEveryPair { r1, r2 in
+        let expected = Set(r1).isSubset(of: r2)
+        let a = OrderedSet(r1)
+        let b = r2
+        expectEqual(a.isSubset(of: b), expected)
+      }
+    }
+  }
+
+  func test_isSuperset_Self() {
     withEvery("unit", in: [1, 3, 7, 10, 20, 50]) { unit in
       SampleRanges(unit: unit).withEveryPair { r1, r2 in
         let expected = Set(r1).isSuperset(of: r2)
         let a = OrderedSet(r1)
         let b = OrderedSet(r2)
-        let c = Set(r2)
-        let d = Array(r2)
-
-        func checkSequence<S: Sequence>(
-          _ set: OrderedSet<Int>,
-          _ other: S
-        ) -> Bool where S.Element == Int {
-          set.isSuperset(of: other)
-        }
-
         expectEqual(a.isSuperset(of: b), expected)
-        expectEqual(a.isSuperset(of: b.unordered), expected)
-        expectEqual(a.isSuperset(of: c), expected)
-
-        expectEqual(checkSequence(a, b), expected)
-        expectEqual(checkSequence(a, c), expected)
-        expectEqual(a.isSuperset(of: d), expected)
-        expectEqual(a.isSuperset(of: d + d), expected)
-        expectEqual(a.isSuperset(of: r2), expected)
       }
     }
   }
 
-  func test_isStrictSubset() {
+  func test_isSuperset_Set() {
+    withEvery("unit", in: [1, 3, 7, 10, 20, 50]) { unit in
+      SampleRanges(unit: unit).withEveryPair { r1, r2 in
+        let expected = Set(r1).isSuperset(of: r2)
+        let a = OrderedSet(r1)
+        let b = Set(r2)
+        expectEqual(a.isSuperset(of: b), expected)
+      }
+    }
+  }
+
+  func test_isSuperset_generic() {
+    withEvery("unit", in: [1, 3, 7, 10, 20, 50]) { unit in
+      SampleRanges(unit: unit).withEveryPair { r1, r2 in
+        let expected = Set(r1).isSuperset(of: r2)
+        let a = OrderedSet(r1)
+        let b = r2
+        expectEqual(a.isSuperset(of: b), expected)
+      }
+    }
+  }
+
+  func test_isStrictSubset_Self() {
     withEvery("unit", in: [1, 3, 7, 10, 20, 50]) { unit in
       SampleRanges(unit: unit).withEveryPair { r1, r2 in
         let expected = Set(r1).isStrictSubset(of: r2)
         let a = OrderedSet(r1)
         let b = OrderedSet(r2)
-        let c = Set(r2)
-        let d = Array(r2)
-
-        func checkSequence<S: Sequence>(
-          _ set: OrderedSet<Int>,
-          _ other: S
-        ) -> Bool where S.Element == Int {
-          set.isStrictSubset(of: other)
-        }
-
         expectEqual(a.isStrictSubset(of: b), expected)
-        expectEqual(a.isStrictSubset(of: b.unordered), expected)
-        expectEqual(a.isStrictSubset(of: c), expected)
-
-        expectEqual(checkSequence(a, b), expected)
-        expectEqual(checkSequence(a, c), expected)
-        expectEqual(a.isStrictSubset(of: d), expected)
-        expectEqual(a.isStrictSubset(of: d + d), expected)
-        expectEqual(a.isStrictSubset(of: r2), expected)
       }
     }
   }
 
-  func test_isStrictSuperset() {
+  func test_isStrictSubset_Set() {
+    withEvery("unit", in: [1, 3, 7, 10, 20, 50]) { unit in
+      SampleRanges(unit: unit).withEveryPair { r1, r2 in
+        let expected = Set(r1).isStrictSubset(of: r2)
+        let a = OrderedSet(r1)
+        let b = Set(r2)
+        expectEqual(a.isStrictSubset(of: b), expected)
+      }
+    }
+  }
+
+  func test_isStrictSubset_generic() {
+    withEvery("unit", in: [1, 3, 7, 10, 20, 50]) { unit in
+      SampleRanges(unit: unit).withEveryPair { r1, r2 in
+        let expected = Set(r1).isStrictSubset(of: r2)
+        let a = OrderedSet(r1)
+        let b = r2
+        expectEqual(a.isStrictSubset(of: b), expected)
+      }
+    }
+  }
+
+  func test_isStrictSuperset_Self() {
     withEvery("unit", in: [1, 3, 7, 10, 20, 50]) { unit in
       SampleRanges(unit: unit).withEveryPair { r1, r2 in
         let expected = Set(r1).isStrictSuperset(of: r2)
         let a = OrderedSet(r1)
         let b = OrderedSet(r2)
-        let c = Set(r2)
-        let d = Array(r2)
-
-        func checkSequence<S: Sequence>(
-          _ set: OrderedSet<Int>,
-          _ other: S
-        ) -> Bool where S.Element == Int {
-          set.isStrictSuperset(of: other)
-        }
-
         expectEqual(a.isStrictSuperset(of: b), expected)
-        expectEqual(a.isStrictSuperset(of: b.unordered), expected)
-        expectEqual(a.isStrictSuperset(of: c), expected)
-
-        expectEqual(checkSequence(a, b), expected)
-        expectEqual(checkSequence(a, c), expected)
-        expectEqual(a.isStrictSuperset(of: d), expected)
-        expectEqual(a.isStrictSuperset(of: d + d), expected)
-        expectEqual(a.isStrictSuperset(of: r2), expected)
       }
     }
   }
 
-  func test_isDisjoint() {
+  func test_isStrictSuperset_Set() {
+    withEvery("unit", in: [1, 3, 7, 10, 20, 50]) { unit in
+      SampleRanges(unit: unit).withEveryPair { r1, r2 in
+        let expected = Set(r1).isStrictSuperset(of: r2)
+        let a = OrderedSet(r1)
+        let b = Set(r2)
+        expectEqual(a.isStrictSuperset(of: b), expected)
+      }
+    }
+  }
+
+  func test_isStrictSuperset_generic() {
+    withEvery("unit", in: [1, 3, 7, 10, 20, 50]) { unit in
+      SampleRanges(unit: unit).withEveryPair { r1, r2 in
+        let expected = Set(r1).isStrictSuperset(of: r2)
+        let a = OrderedSet(r1)
+        let b = r2
+        expectEqual(a.isStrictSuperset(of: b), expected)
+      }
+    }
+  }
+
+  func test_isDisjoint_Self() {
     withEvery("unit", in: [1, 3, 7, 10, 20, 50]) { unit in
       SampleRanges(unit: unit).withEveryPair { r1, r2 in
         let expected = Set(r1).isDisjoint(with: r2)
         let a = OrderedSet(r1)
         let b = OrderedSet(r2)
-        let c = Set(r2)
-        let d = Array(r2)
-
-        func checkSequence<S: Sequence>(
-          _ set: OrderedSet<Int>,
-          _ other: S
-        ) -> Bool where S.Element == Int {
-          set.isDisjoint(with: other)
-        }
-
         expectEqual(a.isDisjoint(with: b), expected)
-        expectEqual(a.isDisjoint(with: b.unordered), expected)
-        expectEqual(a.isDisjoint(with: c), expected)
-
-        expectEqual(checkSequence(a, b), expected)
-        expectEqual(checkSequence(a, c), expected)
-        expectEqual(a.isDisjoint(with: d), expected)
-        expectEqual(a.isDisjoint(with: d + d), expected)
-        expectEqual(a.isDisjoint(with: r2), expected)
       }
     }
   }
 
-  func test_filter() {
-    withOrderedSetLayouts(scales: [0, 5, 6]) { layout in
-      withEvery("factor", in: [1, 2, 3, 5, 10]) { factor in
-        let count = layout.count
-        let input = OrderedSet(layout: layout, contents: 0 ..< count)
-        let expected = (0 ..< count).filter { $0 % factor == 0 }
-        let actual = input.filter { $0 % factor == 0 }
-
-        expectEqualElements(actual, expected)
+  func test_isDisjoint_Set() {
+    withEvery("unit", in: [1, 3, 7, 10, 20, 50]) { unit in
+      SampleRanges(unit: unit).withEveryPair { r1, r2 in
+        let expected = Set(r1).isDisjoint(with: r2)
+        let a = OrderedSet(r1)
+        let b = Set(r2)
+        expectEqual(a.isDisjoint(with: b), expected)
       }
     }
   }
-  func test_filter_type() {
-    let s = Set([1, 2, 3, 4]).filter { $0.isMultiple(of: 2) }
-    expectType(s, Set<Int>.self)
 
-    let os = OrderedSet([1, 2, 3, 4]).filter { $0.isMultiple(of: 2) }
-    expectType(os, OrderedSet<Int>.self)
+  func test_isDisjoint_generic() {
+    withEvery("unit", in: [1, 3, 7, 10, 20, 50]) { unit in
+      SampleRanges(unit: unit).withEveryPair { r1, r2 in
+        let expected = Set(r1).isDisjoint(with: r2)
+        let a = OrderedSet(r1)
+        let b = r2
+        expectEqual(a.isDisjoint(with: b), expected)
+      }
+    }
   }
 }

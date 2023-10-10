@@ -9,10 +9,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#if !COLLECTIONS_SINGLE_MODULE
-import _CollectionsUtilities
-#endif
-
 @frozen
 @usableFromInline
 internal struct _UnsafeWrappedBuffer<Element> {
@@ -79,24 +75,6 @@ internal struct _UnsafeMutableWrappedBuffer<Element> {
   @inlinable
   @inline(__always)
   internal init(
-    _ first: UnsafeMutableBufferPointer<Element>.SubSequence,
-    _ second: UnsafeMutableBufferPointer<Element>? = nil
-  ) {
-    self.init(UnsafeMutableBufferPointer(rebasing: first), second)
-  }
-
-  @inlinable
-  @inline(__always)
-  internal init(
-    _ first: UnsafeMutableBufferPointer<Element>,
-    _ second: UnsafeMutableBufferPointer<Element>.SubSequence
-  ) {
-    self.init(first, UnsafeMutableBufferPointer(rebasing: second))
-  }
-
-  @inlinable
-  @inline(__always)
-  internal init(
     start: UnsafeMutablePointer<Element>,
     count: Int
   ) {
@@ -135,9 +113,9 @@ extension _UnsafeMutableWrappedBuffer {
       return self
     }
     if n <= first.count {
-      return Self(first.prefix(n))
+      return Self(first.prefix(n)._rebased())
     }
-    return Self(first, second!.prefix(n - first.count))
+    return Self(first, second!.prefix(n - first.count)._rebased())
   }
 
   @inlinable
@@ -147,20 +125,20 @@ extension _UnsafeMutableWrappedBuffer {
       return self
     }
     guard let second = second else {
-      return Self(first.suffix(n))
+      return Self(first.suffix(n)._rebased())
     }
     if n <= second.count {
-      return Self(second.suffix(n))
+      return Self(second.suffix(n)._rebased())
     }
-    return Self(first.suffix(n - second.count), second)
+    return Self(first.suffix(n - second.count)._rebased(), second)
   }
 }
 
 extension _UnsafeMutableWrappedBuffer {
   @inlinable
   internal func deinitialize() {
-    first.deinitialize()
-    second?.deinitialize()
+    first._deinitializeAll()
+    second?._deinitializeAll()
   }
 
   @inlinable
@@ -221,10 +199,10 @@ extension _UnsafeMutableWrappedBuffer {
     assert(self.count == elements.count)
     if let second = second {
       let wrap = elements.index(elements.startIndex, offsetBy: first.count)
-      first.initializeAll(fromContentsOf: elements[..<wrap])
-      second.initializeAll(fromContentsOf: elements[wrap...])
+      first._initialize(from: elements[..<wrap])
+      second._initialize(from: elements[wrap...])
     } else {
-      first.initializeAll(fromContentsOf: elements)
+      first._initialize(from: elements)
     }
   }
 

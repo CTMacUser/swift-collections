@@ -10,7 +10,6 @@
 //===----------------------------------------------------------------------===//
 
 extension _HashTable.Bucket: CustomStringConvertible {
-  // A textual representation of this instance.
   public var description: String { "Bucket(@\(offset))"}
 }
 

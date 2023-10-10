@@ -104,7 +104,17 @@ We also have non-optional flavors that assume the heap isn't empty, `removeMin()
 
 ### Iteration
 
-`Heap` itself doesn't conform to `Sequence` because of the potential confusion around which direction it should iterate (largest-to-smallest? smallest-to-largest?).
+`Heap` itself doesn't conform to `Sequence` because of the potential confusion around which direction it should iterate (largest-to-smallest? smallest-to-largest?). Instead, we expose two iterators that conform to `Sequence`:
+
+```swift
+for val in heap.ascending {
+    ...
+}
+
+for val in heap.descending {
+    ...
+}
+```
 
 ### Performance
 
