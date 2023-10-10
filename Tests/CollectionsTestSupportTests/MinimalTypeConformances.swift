@@ -10,9 +10,11 @@
 //===----------------------------------------------------------------------===//
 
 import XCTest
+#if !COLLECTIONS_SINGLE_MODULE
 import _CollectionsTestSupport
+#endif
 
-final class DequeTests: CollectionTestCase {
+final class MinimalTypeTests: CollectionTestCase {
   func testMinimalSequence() {
     withEvery(
       "behavior",

@@ -2,20 +2,22 @@
 //
 // This source file is part of the Swift Collections open source project
 //
-// Copyright (c) 2021 Apple Inc. and the Swift project authors
+// Copyright (c) 2021 - 2023 Apple Inc. and the Swift project authors
 // Licensed under Apache License v2.0 with Runtime Library Exception
 //
 // See https://swift.org/LICENSE.txt for license information
 //
 //===----------------------------------------------------------------------===//
 
+#if !COLLECTIONS_SINGLE_MODULE
+import _CollectionsUtilities
+#endif
+
 extension OrderedSet {
   /// An unordered view into an ordered set, providing `SetAlgebra`
   /// conformance.
   @frozen
   public struct UnorderedView {
-    public typealias Element = OrderedSet.Element
-
     @usableFromInline
     internal var _base: OrderedSet
 
@@ -54,7 +56,7 @@ extension OrderedSet {
     get {
       UnorderedView(_base: self)
     }
-    @inline(__always)
+    @inline(__always) // https://github.com/apple/swift-collections/issues/164
     _modify {
       var view = UnorderedView(_base: self)
       self = OrderedSet()
@@ -63,6 +65,8 @@ extension OrderedSet {
     }
   }
 }
+
+extension OrderedSet.UnorderedView: Sendable where Element: Sendable {}
 
 extension OrderedSet.UnorderedView: CustomStringConvertible {
   /// A textual representation of this instance.
@@ -74,7 +78,10 @@ extension OrderedSet.UnorderedView: CustomStringConvertible {
 extension OrderedSet.UnorderedView: CustomDebugStringConvertible {
   /// A textual representation of this instance, suitable for debugging.
   public var debugDescription: String {
-    _base._debugDescription(typeName: "\(_base._debugTypeName()).UnorderedView")
+    _arrayDescription(
+      for: _base,
+      debug: true,
+      typeName: "\(OrderedSet._debugTypeName()).UnorderedView")
   }
 }
 
@@ -138,7 +145,9 @@ extension OrderedSet.UnorderedView: ExpressibleByArrayLiteral {
   }
 }
 
-extension OrderedSet.UnorderedView: SetAlgebra {}
+extension OrderedSet.UnorderedView: SetAlgebra {
+  public typealias Element = OrderedSet.Element
+}
 
 extension OrderedSet.UnorderedView {
   /// Creates an empty set.
@@ -302,7 +311,7 @@ extension OrderedSet.UnorderedView {
   @inlinable
   @inline(__always)
   @discardableResult
-  public mutating func remove(_ member: Self.Element) -> Self.Element? {
+  public mutating func remove(_ member: Element) -> Element? {
     _base.remove(member)
   }
 }
@@ -629,6 +638,36 @@ extension OrderedSet.UnorderedView {
     _ other: S
   ) where S.Element == Element {
     _base.subtract(other)
+  }
+}
+
+extension OrderedSet.UnorderedView {
+  /// Returns a Boolean value indicating whether two set values contain the
+  /// same elements, but not necessarily in the same order.
+  ///
+  /// - Note: This member implements different behavior than the `==(_:_:)`
+  ///    operator -- the latter implements an ordered comparison, matching
+  ///    the stricter concept of equality expected of an ordered collection
+  ///    type.
+  ///
+  /// - Complexity: O(`min(left.count, right.count)`), as long as`Element`
+  ///    properly implements hashing.
+  public func isEqualSet(to other: Self) -> Bool {
+    self == other
+  }
+
+  /// Returns a Boolean value indicating whether an ordered set contains the
+  /// same values as a given sequence, but not necessarily in the same
+  /// order.
+  ///
+  /// Duplicate items in `other` do not prevent it from comparing equal to
+  /// `self`.
+  ///
+  /// - Complexity: O(*n*), where *n* is the number of items in
+  ///    `other`, as long as`Element` properly implements hashing.
+  public func isEqualSet<S: Sequence>(to other: S) -> Bool
+  where S.Element == Element {
+    self._base.isEqualSet(to: other)
   }
 }
 

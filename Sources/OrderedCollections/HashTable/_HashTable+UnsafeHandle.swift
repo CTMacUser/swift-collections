@@ -9,6 +9,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+#if !COLLECTIONS_SINGLE_MODULE
+import _CollectionsUtilities
+#endif
+
 @usableFromInline
 internal typealias _UnsafeHashTable = _HashTable.UnsafeHandle
 
@@ -484,7 +488,7 @@ extension _UnsafeHashTable {
   @usableFromInline
   internal func clear() {
     assertMutable()
-    _buckets.assign(repeating: 0, count: wordCount)
+    _buckets.update(repeating: 0, count: wordCount)
   }
 }
 

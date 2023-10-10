@@ -1,4 +1,5 @@
 .DS_Store
+/.swiftpm
 /.build
 /Packages
 /*.xcodeproj
@@ -6,3 +7,5 @@ xcuserdata/
 .*.sw?
 /Benchmarks/.swiftpm
 /Benchmarks/.build
+.docc-build
+__pycache__
